@@ -45,8 +45,16 @@ def get_supabase_client():
         return supabase_client
     
     # Get Supabase credentials
-    supabase_url = os.getenv('SUPABASE_URL', "https://ghbmfgomnqmffixfkdyp.supabase.co")
-    supabase_key = os.getenv('SUPABASE_KEY', "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImdoYm1mZ29tbnFtZmZpeGZrZHlwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDcxNDAxNTcsImV4cCI6MjA2MjcxNjE1N30.Fw750xiDWVPrl6ssr9p6AJTt--8zvnPoboxJiURvsOI")
+    # Try to get from streamlit secrets first, then environment variables, then fallback to defaults
+    try:
+        supabase_url = st.secrets["SUPABASE_URL"]
+    except:
+        supabase_url = os.getenv('SUPABASE_URL', "https://ghbmfgomnqmffixfkdyp.supabase.co")
+    
+    try:
+        supabase_key = st.secrets["SUPABASE_KEY"]
+    except:
+        supabase_key = os.getenv('SUPABASE_KEY', "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImdoYm1mZ29tbnFtZmZpeGZrZHlwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDcxNDAxNTcsImV4cCI6MjA2MjcxNjE1N30.Fw750xiDWVPrl6ssr9p6AJTt--8zvnPoboxJiURvsOI")
     
     if not supabase_url or not supabase_key:
         print("Supabase URL and key must be set in environment variables")
@@ -62,55 +70,18 @@ def get_supabase_client():
                     from supabase import create_client
                     create_client_fn = create_client
                 
-                # Version-compatible options handling
-                if HAS_CLIENT_OPTIONS:
-                    try:
-                        from supabase.lib.client_options import ClientOptions
-                        # Create options without proxy parameter
-                        try:
-                            # Check Supabase version to determine parameter compatibility
-                            import supabase
-                            supabase_version = getattr(supabase, "__version__", "1.0.0")
-                            print(f"Supabase version: {supabase_version}")
-                            
-                            # For version 2.x and newer
-                            if supabase_version.startswith("2."):
-                                options = ClientOptions(
-                                    schema="public",
-                                    headers={},
-                                    auto_refresh_token=True,
-                                    persist_session=True
-                                )
-                            # For older versions, proxy isn't supported
-                            else:
-                                # Initialize with minimal options
-                                options = {}
-                        except Exception as e:
-                            print(f"Error checking Supabase version: {str(e)}")
-                            options = {}  # Fallback to empty dict
-                    except Exception as e:
-                        print(f"Error creating ClientOptions: {str(e)}")
-                        options = {}  # Fallback to empty dict
-                else:
-                    # Simple dict for older versions
-                    options = {}
-                
                 # Create a new client with proper options
                 # Try different ways to create the client depending on version
                 try:
-                    # Try without options parameter first (for older versions)
+                    # Simplest approach - no options at all
                     supabase_client = create_client_fn(supabase_url, supabase_key)
-                except TypeError as e:
-                    if "options" in str(e):
-                        # If it fails because of options, try with empty dict
-                        supabase_client = create_client_fn(supabase_url, supabase_key, options={})
-                    else:
-                        raise
-                
-                # Test the connection
-                test_response = supabase_client.table('users').select('id').limit(1).execute()
-                print("Successfully connected to Supabase")
-                return supabase_client
+                    
+                    # Test the connection right away to catch any issues
+                    test_response = supabase_client.table('users').select('id').limit(1).execute()
+                    print("Successfully connected to Supabase")
+                    return supabase_client
+                except Exception as e:
+                    raise Exception(f"Failed to create Supabase client: {str(e)}")
             except Exception as e:
                 if attempt < DB_RETRY_ATTEMPTS - 1:
                     print(f"Supabase connection attempt {attempt+1} failed: {str(e)}. Retrying...")
@@ -136,8 +107,16 @@ def get_supabase_admin_client():
         return supabase_admin_client
     
     # Get Supabase credentials
-    supabase_url = os.getenv('SUPABASE_URL', "https://ghbmfgomnqmffixfkdyp.supabase.co")
-    supabase_service_key = os.getenv('SUPABASE_SERVICE_KEY', "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImdoYm1mZ29tbnFtZmZpeGZrZHlwIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc0NzE0MDE1NywiZXhwIjoyMDYyNzE2MTU3fQ.RnbSqdIM5A67NuKHDOTdpqpu6G2zKJfhMeQapGUI2kw") 
+    # Try to get from streamlit secrets first, then environment variables, then fallback to defaults
+    try:
+        supabase_url = st.secrets["SUPABASE_URL"]
+    except:
+        supabase_url = os.getenv('SUPABASE_URL', "https://ghbmfgomnqmffixfkdyp.supabase.co")
+    
+    try:
+        supabase_service_key = st.secrets["SUPABASE_SERVICE_KEY"]
+    except:
+        supabase_service_key = os.getenv('SUPABASE_SERVICE_KEY', "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImdoYm1mZ29tbnFtZmZpeGZrZHlwIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc0NzE0MDE1NywiZXhwIjoyMDYyNzE2MTU3fQ.RnbSqdIM5A67NuKHDOTdpqpu6G2zKJfhMeQapGUI2kw")
     
     if not supabase_url or not supabase_service_key:
         print("Supabase URL and service key must be set in environment variables")
@@ -153,54 +132,18 @@ def get_supabase_admin_client():
                     from supabase import create_client
                     create_client_fn = create_client
                 
-                # Version-compatible options handling
-                if HAS_CLIENT_OPTIONS:
-                    try:
-                        from supabase.lib.client_options import ClientOptions
-                        # Create options without proxy parameter
-                        try:
-                            # Check Supabase version to determine parameter compatibility
-                            import supabase
-                            supabase_version = getattr(supabase, "__version__", "1.0.0")
-                            
-                            # For version 2.x and newer
-                            if supabase_version.startswith("2."):
-                                options = ClientOptions(
-                                    schema="public",
-                                    headers={},
-                                    auto_refresh_token=True,
-                                    persist_session=True
-                                )
-                            # For older versions, proxy isn't supported
-                            else:
-                                # Initialize with minimal options
-                                options = {}
-                        except Exception as e:
-                            print(f"Error checking Supabase version: {str(e)}")
-                            options = {}  # Fallback to empty dict
-                    except Exception as e:
-                        print(f"Error creating ClientOptions: {str(e)}")
-                        options = {}  # Fallback to empty dict
-                else:
-                    # Simple dict for older versions
-                    options = {}
-                
                 # Create admin client with proper options
                 # Try different ways to create the client depending on version
                 try:
-                    # Try without options parameter first (for older versions)
+                    # Simplest approach - no options at all
                     supabase_admin_client = create_client_fn(supabase_url, supabase_service_key)
-                except TypeError as e:
-                    if "options" in str(e):
-                        # If it fails because of options, try with empty dict
-                        supabase_admin_client = create_client_fn(supabase_url, supabase_service_key, options={})
-                    else:
-                        raise
-                
-                # Test the connection
-                test_response = supabase_admin_client.table('users').select('id').limit(1).execute()
-                print("Successfully connected to Supabase with admin privileges")
-                return supabase_admin_client
+                    
+                    # Test the connection right away to catch any issues
+                    test_response = supabase_admin_client.table('users').select('id').limit(1).execute()
+                    print("Successfully connected to Supabase with admin privileges")
+                    return supabase_admin_client
+                except Exception as e:
+                    raise Exception(f"Failed to create Supabase admin client: {str(e)}")
             except Exception as e:
                 if attempt < DB_RETRY_ATTEMPTS - 1:
                     print(f"Supabase admin connection attempt {attempt+1} failed: {str(e)}. Retrying...")
