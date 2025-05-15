@@ -1552,9 +1552,9 @@ def customer_dashboard():
             """, unsafe_allow_html=True)
             
             if st.button(f"View Details", key=f"customer_view_business_{i}", use_container_width=True):
-                        st.session_state.selected_business_id = business.get('id')
-                        st.session_state.page = "customer_business_detail"
-                        st.rerun()
+                st.session_state.selected_business_id = business.get('id')
+                st.session_state.page = "customer_business_detail"
+                st.rerun()
     else:
         st.info("No credit accounts yet. Connect to a business to get started.")
     
@@ -1598,16 +1598,15 @@ def customer_dashboard():
     
     # Camera option below text input
     st.markdown("<h4 style='text-align: center; margin-bottom: 1rem;'>Or Scan QR Code</h4>", unsafe_allow_html=True)
-        
+    
     # Center the camera input
-        col1, col2, col3 = st.columns([1, 3, 1])
-        with col2:
-            uploaded_qr = st.camera_input("Take a picture of QR code", key="qr_camera")
-            
-            if uploaded_qr is not None:
-                # In a real app, we would process the QR code image here
+    col1, col2, col3 = st.columns([1, 3, 1])
+    with col2:
+        uploaded_qr = st.camera_input("Take a picture of QR code", key="qr_camera")
+        
+        if uploaded_qr is not None:
+            # In a real app, we would process the QR code image here
             st.info("QR code processing would happen here. For now, please use the manual entry option above.")
-
 def customer_business_detail():
     # Hide the default Streamlit menu
     hide_streamlit_style = """
