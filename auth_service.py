@@ -21,22 +21,41 @@ def login(phone, password, user_type='customer'):
     Returns (success, user_data_or_error_message) tuple
     """
     try:
+        # For debugging
+        print(f"Login attempt: phone={phone}, user_type={user_type}")
+        
         supabase = supabase_service.get_supabase_admin_client()
         if not supabase:
+            print("Login failed: No Supabase connection")
             return False, "Database connection error. Please try again later."
             
         # Try to find the user in Supabase
-        user_response = supabase.table('users').select('*').eq('phone_number', phone).eq('user_type', user_type).execute()
+        user_response = supabase.table('users').select('*').eq('phone_number', phone).execute()
         
+        print(f"User query response: {len(user_response.data) if user_response.data else 0} users found")
+        
+        # First check if any user exists with this phone number
         if not user_response.data:
+            print(f"Login failed: No user found with phone {phone}")
             return False, "User not found. Please check your phone number or register for a new account."
+        
+        # Find user with matching user_type
+        matched_users = [u for u in user_response.data if u.get('user_type') == user_type]
+        
+        if not matched_users:
+            users_types = [u.get('user_type') for u in user_response.data]
+            print(f"Login failed: User found but wrong type. Found: {users_types}, requested: {user_type}")
+            return False, f"No {user_type} account found with this phone number. You might have registered as a {', '.join(users_types)}."
             
-        user = user_response.data[0]
+        user = matched_users[0]
         
         # Check password
         if user['password'] != password:
+            print(f"Login failed: Incorrect password for {phone}")
             return False, "Incorrect password. Please check and try again."
             
+        print(f"Login successful for {phone} as {user_type}")
+        
         # Set session data
         st.session_state.user_id = user['id']
         st.session_state.user_name = user['name']
