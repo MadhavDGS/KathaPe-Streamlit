@@ -66,13 +66,28 @@ def get_supabase_client():
                 if HAS_CLIENT_OPTIONS:
                     try:
                         from supabase.lib.client_options import ClientOptions
-                        # Try with ClientOptions
-                        options = ClientOptions(
-                            schema="public",
-                            headers={},
-                            auto_refresh_token=True,
-                            persist_session=True
-                        )
+                        # Create options without proxy parameter
+                        try:
+                            # Check Supabase version to determine parameter compatibility
+                            import supabase
+                            supabase_version = getattr(supabase, "__version__", "1.0.0")
+                            print(f"Supabase version: {supabase_version}")
+                            
+                            # For version 2.x and newer
+                            if supabase_version.startswith("2."):
+                                options = ClientOptions(
+                                    schema="public",
+                                    headers={},
+                                    auto_refresh_token=True,
+                                    persist_session=True
+                                )
+                            # For older versions, proxy isn't supported
+                            else:
+                                # Initialize with minimal options
+                                options = {}
+                        except Exception as e:
+                            print(f"Error checking Supabase version: {str(e)}")
+                            options = {}  # Fallback to empty dict
                     except Exception as e:
                         print(f"Error creating ClientOptions: {str(e)}")
                         options = {}  # Fallback to empty dict
@@ -81,7 +96,16 @@ def get_supabase_client():
                     options = {}
                 
                 # Create a new client with proper options
-                supabase_client = create_client_fn(supabase_url, supabase_key, options=options)
+                # Try different ways to create the client depending on version
+                try:
+                    # Try without options parameter first (for older versions)
+                    supabase_client = create_client_fn(supabase_url, supabase_key)
+                except TypeError as e:
+                    if "options" in str(e):
+                        # If it fails because of options, try with empty dict
+                        supabase_client = create_client_fn(supabase_url, supabase_key, options={})
+                    else:
+                        raise
                 
                 # Test the connection
                 test_response = supabase_client.table('users').select('id').limit(1).execute()
@@ -133,13 +157,27 @@ def get_supabase_admin_client():
                 if HAS_CLIENT_OPTIONS:
                     try:
                         from supabase.lib.client_options import ClientOptions
-                        # Try with ClientOptions
-                        options = ClientOptions(
-                            schema="public",
-                            headers={},
-                            auto_refresh_token=True,
-                            persist_session=True
-                        )
+                        # Create options without proxy parameter
+                        try:
+                            # Check Supabase version to determine parameter compatibility
+                            import supabase
+                            supabase_version = getattr(supabase, "__version__", "1.0.0")
+                            
+                            # For version 2.x and newer
+                            if supabase_version.startswith("2."):
+                                options = ClientOptions(
+                                    schema="public",
+                                    headers={},
+                                    auto_refresh_token=True,
+                                    persist_session=True
+                                )
+                            # For older versions, proxy isn't supported
+                            else:
+                                # Initialize with minimal options
+                                options = {}
+                        except Exception as e:
+                            print(f"Error checking Supabase version: {str(e)}")
+                            options = {}  # Fallback to empty dict
                     except Exception as e:
                         print(f"Error creating ClientOptions: {str(e)}")
                         options = {}  # Fallback to empty dict
@@ -148,7 +186,16 @@ def get_supabase_admin_client():
                     options = {}
                 
                 # Create admin client with proper options
-                supabase_admin_client = create_client_fn(supabase_url, supabase_service_key, options=options)
+                # Try different ways to create the client depending on version
+                try:
+                    # Try without options parameter first (for older versions)
+                    supabase_admin_client = create_client_fn(supabase_url, supabase_service_key)
+                except TypeError as e:
+                    if "options" in str(e):
+                        # If it fails because of options, try with empty dict
+                        supabase_admin_client = create_client_fn(supabase_url, supabase_service_key, options={})
+                    else:
+                        raise
                 
                 # Test the connection
                 test_response = supabase_admin_client.table('users').select('id').limit(1).execute()
@@ -164,6 +211,190 @@ def get_supabase_admin_client():
         print(f"Failed to connect to Supabase with admin privileges after {DB_RETRY_ATTEMPTS} attempts: {str(e)}")
         print("Falling back to mock data system")
         return None
+
+def mock_query_table(table_name, query_type='select', fields='*', filters=None, data=None):
+    """
+    Mock implementation of query_table function when Supabase is unavailable
+    
+    This provides minimal functionality to allow the app to work without Supabase
+    """
+    # Response class with data attribute to match Supabase responses
+    class MockResponse:
+        def __init__(self, data):
+            self.data = data
+    
+    print(f"Using mock data for {query_type} on {table_name}")
+    
+    try:
+        # Ensure session state has the required mock data structures
+        if "mock_users" not in st.session_state:
+            st.session_state.mock_users = {}
+        
+        if "mock_businesses" not in st.session_state:
+            st.session_state.mock_businesses = {}
+            
+        if "mock_customers" not in st.session_state:
+            st.session_state.mock_customers = {}
+            
+        if "mock_customer_credits" not in st.session_state:
+            st.session_state.mock_customer_credits = []
+            
+        if "mock_transactions" not in st.session_state:
+            st.session_state.mock_transactions = []
+        
+        # Initialize with a sample business user if no users exist
+        if not st.session_state.mock_users:
+            business_user_id = str(uuid.uuid4())
+            business_id = str(uuid.uuid4())
+            
+            # Sample business user
+            st.session_state.mock_users["9999999999"] = {
+                "id": business_user_id,
+                "name": "Sample Business",
+                "phone_number": "9999999999",
+                "password": "password123",
+                "user_type": "business",
+                "created_at": datetime.now().isoformat()
+            }
+            
+            # Create matching business record
+            st.session_state.mock_businesses[business_user_id] = {
+                "id": business_id,
+                "user_id": business_user_id,
+                "name": "Sample Business Account",
+                "description": "Mock business account",
+                "access_pin": "1234",
+                "created_at": datetime.now().isoformat()
+            }
+            
+        # Handle different query types
+        if query_type == 'select':
+            results = []
+            
+            # Get data based on table name
+            if table_name == 'users':
+                results = list(st.session_state.mock_users.values())
+            elif table_name == 'businesses':
+                results = list(st.session_state.mock_businesses.values())
+            elif table_name == 'customers':
+                results = list(st.session_state.mock_customers.values())
+            elif table_name == 'customer_credits':
+                results = st.session_state.mock_customer_credits
+            elif table_name == 'transactions':
+                results = st.session_state.mock_transactions
+            
+            # Apply filters if any
+            if filters:
+                filtered_results = []
+                for item in results:
+                    matches = True
+                    for field, op, value in filters:
+                        if field in item:
+                            if op == 'eq' and item[field] != value:
+                                matches = False
+                            elif op == 'neq' and item[field] == value:
+                                matches = False
+                    
+                    if matches:
+                        filtered_results.append(item)
+                
+                results = filtered_results
+            
+            return MockResponse(results)
+        
+        # Handle insert queries
+        elif query_type == 'insert':
+            if not data:
+                return MockResponse([])
+            
+            # Ensure ID is present
+            if 'id' not in data:
+                data['id'] = str(uuid.uuid4())
+            
+            # Ensure created_at is present
+            if 'created_at' not in data:
+                data['created_at'] = datetime.now().isoformat()
+            
+            # Insert into the correct "table"
+            if table_name == 'users':
+                st.session_state.mock_users[data['phone_number']] = data
+                return MockResponse([data])
+            elif table_name == 'businesses':
+                st.session_state.mock_businesses[data['user_id']] = data
+                return MockResponse([data])
+            elif table_name == 'customers':
+                st.session_state.mock_customers[data['user_id']] = data
+                return MockResponse([data])
+            elif table_name == 'customer_credits':
+                # Check if credit relationship already exists
+                for i, credit in enumerate(st.session_state.mock_customer_credits):
+                    if (credit['business_id'] == data['business_id'] and 
+                        credit['customer_id'] == data['customer_id']):
+                        # Update existing credit
+                        st.session_state.mock_customer_credits[i].update(data)
+                        return MockResponse([st.session_state.mock_customer_credits[i]])
+                
+                # Add new credit relationship
+                st.session_state.mock_customer_credits.append(data)
+                return MockResponse([data])
+            elif table_name == 'transactions':
+                # Add transaction
+                st.session_state.mock_transactions.append(data)
+                
+                # Update customer credit balance if needed
+                transaction_type = data.get('transaction_type')
+                if transaction_type in ['credit', 'payment']:
+                    business_id = data.get('business_id')
+                    customer_id = data.get('customer_id')
+                    amount = float(data.get('amount', 0))
+                    
+                    # Find or create a credit relationship
+                    for i, credit in enumerate(st.session_state.mock_customer_credits):
+                        if (credit['business_id'] == business_id and 
+                            credit['customer_id'] == customer_id):
+                            # Update balance
+                            current_balance = float(credit.get('current_balance', 0))
+                            if transaction_type == 'credit':
+                                st.session_state.mock_customer_credits[i]['current_balance'] = current_balance + amount
+                            elif transaction_type == 'payment':
+                                st.session_state.mock_customer_credits[i]['current_balance'] = current_balance - amount
+                            break
+                    else:
+                        # Credit relationship doesn't exist, create it
+                        credit_data = {
+                            'id': str(uuid.uuid4()),
+                            'business_id': business_id,
+                            'customer_id': customer_id,
+                            'current_balance': amount if transaction_type == 'credit' else -amount,
+                            'created_at': datetime.now().isoformat()
+                        }
+                        st.session_state.mock_customer_credits.append(credit_data)
+                
+                return MockResponse([data])
+            else:
+                return MockResponse([])
+        
+        # Handle update queries (simplified)
+        elif query_type == 'update':
+            updated_items = []
+            
+            # For now, we'll just return success without actual updates
+            # This could be enhanced for better mock behavior if needed
+            return MockResponse([data] if data else [])
+        
+        # Handle delete queries (simplified)
+        elif query_type == 'delete':
+            # For now, we'll just return success without actual deletion
+            # This could be enhanced for better mock behavior if needed
+            return MockResponse([])
+        
+        else:
+            print(f"Unsupported query type: {query_type}")
+            return MockResponse([])
+            
+    except Exception as e:
+        print(f"Error in mock_query_table: {str(e)}")
+        return MockResponse([])
 
 def query_table(table_name, query_type='select', fields='*', filters=None, data=None):
     """
@@ -186,8 +417,7 @@ def query_table(table_name, query_type='select', fields='*', filters=None, data=
     # If no Supabase client is available, fall back to mock data
     if not supabase:
         print(f"No Supabase client available, using mock data for {query_type} on {table_name}")
-        import auth_service
-        return auth_service.mock_query_table(table_name, query_type, fields, filters, data)
+        return mock_query_table(table_name, query_type, fields, filters, data)
     
     try:
         # Start with the table reference
@@ -312,15 +542,9 @@ def query_table(table_name, query_type='select', fields='*', filters=None, data=
     except Exception as e:
         print(f"Error in Supabase query for {query_type} on {table_name}: {str(e)}")
         
-        # Create a response-like object with empty data
-        class MockResponse:
-            def __init__(self, data):
-                self.data = data
-        
         # Fall back to mock data as a last resort
         print("Falling back to mock data system")
-        import auth_service
-        return auth_service.mock_query_table(table_name, query_type, fields, filters, data)
+        return mock_query_table(table_name, query_type, fields, filters, data)
 
 # Initialize the Supabase clients
 def init_supabase():
