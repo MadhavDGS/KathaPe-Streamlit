@@ -465,7 +465,7 @@ def login_page():
     <div style="text-align: center; animation: fadeIn 1s ease-in-out; margin-bottom: 2rem;">
         <h1 class='main-header' style="margin-bottom: 0.5rem; font-size: 3rem;">KathaPe</h1>
         <h2 class='sub-header' style="margin-top: 0; margin-bottom: 0.5rem; font-size: 1.5rem;">Digital Credit Book</h2>
-        <p style="color: #666; margin-top: 0;">Manage your business credits easily</p>
+        <p style="color: #666; margin-top: 0; margin-bottom: 1.5rem;">Manage your business credits easily</p>
     </div>
     
     <style>
@@ -518,9 +518,9 @@ def login_page():
                     else:
                         st.error("User not found or invalid credentials. Please check your details and try again.")
         
-        # Sign up link
-        st.markdown('<div class="auth-link">', unsafe_allow_html=True)
-        st.markdown('Don\'t have an account? <a href="#" id="signup-link">Sign up</a>', unsafe_allow_html=True)
+        # Sign up link - more obvious for older users
+        st.markdown('<div class="auth-link" style="font-size: 1.1rem; margin-top: 1.5rem;">', unsafe_allow_html=True)
+        st.markdown('Don\'t have an account? <a href="#" id="signup-link" style="color: #1E88E5; font-weight: bold;">Sign up here</a>', unsafe_allow_html=True)
         st.markdown('</div>', unsafe_allow_html=True)
         
         if st.button("Sign up instead", key="signup_toggle", use_container_width=True):
@@ -570,9 +570,9 @@ def login_page():
                     else:
                         st.error(message)
         
-        # Login link
-        st.markdown('<div class="auth-link">', unsafe_allow_html=True)
-        st.markdown('Already have an account? <a href="#" id="login-link">Log in</a>', unsafe_allow_html=True)
+        # Login link - more obvious for older users
+        st.markdown('<div class="auth-link" style="font-size: 1.1rem; margin-top: 1.5rem;">', unsafe_allow_html=True)
+        st.markdown('Already have an account? <a href="#" id="login-link" style="color: #1E88E5; font-weight: bold;">Log in here</a>', unsafe_allow_html=True)
         st.markdown('</div>', unsafe_allow_html=True)
         
         if st.button("Log in instead", key="login_toggle", use_container_width=True):
@@ -1142,42 +1142,14 @@ def customer_dashboard():
     """
     st.markdown(hide_streamlit_style, unsafe_allow_html=True)
     
-    # Add larger font and easier to read styles
+    # Add customer styling that matches business theme
     st.markdown("""
     <style>
-    /* Larger text for better readability */
-    .streamlit-container {
-        font-size: 18px !important;
+    .larger-text {
+        font-size: 1.2rem !important;
     }
-    /* Bigger touch targets */
-    button, select, input {
-        min-height: 48px !important;
-        font-size: 16px !important;
-    }
-    /* Improved spacing */
-    .larger-header {
-        font-size: 2.2rem !important;
-        margin-bottom: 1.5rem !important;
-        text-align: center;
-    }
-    .business-card {
-        padding: 15px;
-        border-radius: 10px;
-        background-color: #f8f9fa;
-        margin-bottom: 15px;
-        border: 1px solid #ddd;
-    }
-    .business-name {
-        font-size: 1.4rem;
-        font-weight: bold;
-    }
-    .business-balance {
-        font-size: 1.2rem;
-        font-weight: 500;
-    }
-    .action-button {
-        font-size: 1.1rem !important;
-        padding: 10px 15px !important;
+    .extra-large-text {
+        font-size: 1.4rem !important;
     }
     </style>
     """, unsafe_allow_html=True)
@@ -1186,47 +1158,72 @@ def customer_dashboard():
     customer_id = st.session_state.customer_id
     
     # Header with welcome and clear title
-    st.markdown(f"<h2 style='text-align: center; margin-bottom: 0.5rem;'>Welcome, {st.session_state.user_name}</h2>", unsafe_allow_html=True)
-    st.markdown("<h1 class='larger-header'>My Credit Book</h1>", unsafe_allow_html=True)
+    st.markdown("<h1 class='main-header'>My Credit Book</h1>", unsafe_allow_html=True)
+    st.markdown(f"<p style='text-align: center; font-size: 1.3rem; margin-bottom: 1.5rem;'>Welcome, {st.session_state.user_name}</p>", unsafe_allow_html=True)
     
     # Get businesses where customer has credit
     businesses = data_service.get_customer_businesses(customer_id)
     
-    # Add a divider for clean separation
-    st.markdown("<hr style='margin: 1rem 0 1.5rem 0; opacity: 0.3;'>", unsafe_allow_html=True)
+    # Create two sections side by side like in business view
+    col1, col2 = st.columns([2, 1])
     
-    # Display businesses
-    if businesses:
-        st.markdown("<h3 style='text-align: center; margin-bottom: 1.5rem; font-size: 1.8rem;'>Your Credit Accounts</h3>", unsafe_allow_html=True)
-        
-        # Create a cleaner, more accessible list of businesses
-        for i, business in enumerate(businesses):
-            # Use a card-like design for each business
-            st.markdown(f"""
-            <div class='business-card'>
-                <div class='business-name'>{business.get('name', 'Unknown Business')}</div>
-                <div class='business-balance' style='color: {"#E57373" if float(business.get("current_balance", 0)) > 0 else "#81C784"}'>
-                    Balance: ₹{business.get('current_balance', 0)}
+    with col1:
+        # Display businesses
+        if businesses:
+            st.markdown('<div class="app-section">', unsafe_allow_html=True)
+            st.markdown('<div class="section-header">Your Credit Accounts</div>', unsafe_allow_html=True)
+            
+            for i, business in enumerate(businesses):
+                # Match customer row styling from the business page
+                business_name = business.get('name', 'Unknown Business')
+                balance = float(business.get('current_balance', 0))
+                
+                # Create a card-like structure for each business
+                st.markdown(f"""
+                <div class="customer-row">
+                    <div style="display: flex; justify-content: space-between; width: 100%; align-items: center;">
+                        <div style="flex: 3;">
+                            <div class="customer-name extra-large-text">{business_name}</div>
+                        </div>
+                        <div style="flex: 2; text-align: right;">
+                            <div class="customer-balance {'balance-positive' if balance > 0 else 'balance-negative'} extra-large-text">
+                                ₹{balance}
+                            </div>
+                        </div>
+                        <div style="flex: 1; text-align: right;">
+                            <button id="view-business-{i}" style="background-color: #1E88E5; color: white; border: none; padding: 10px 15px; border-radius: 4px; cursor: pointer; font-size: 1.1rem;">
+                                View
+                            </button>
+                        </div>
+                    </div>
                 </div>
+                <script>
+                    document.getElementById("view-business-{i}").addEventListener("click", function() {{
+                        // This will be handled by Streamlit button
+                    }});
+                </script>
+                """, unsafe_allow_html=True)
+                
+                # Hidden button that will be triggered by the HTML button (for Streamlit functionality)
+                if st.button(f"View", key=f"customer_view_business_{i}", label_visibility="collapsed"):
+                    st.session_state.selected_business_id = business.get('id')
+                    st.session_state.page = "customer_business_detail"
+                    st.rerun()
+            
+            st.markdown('</div>', unsafe_allow_html=True)
+        else:
+            st.markdown("""
+            <div class="app-section" style="text-align: center; padding: 3rem 1rem;">
+                <img src="https://cdn-icons-png.flaticon.com/512/1170/1170577.png" width="100" style="opacity: 0.5; margin-bottom: 1rem;"/>
+                <h3 style="font-size: 1.4rem;">No credit accounts yet</h3>
+                <p style="color: #666; font-size: 1.2rem;">Connect to a business to get started with your credit book.</p>
             </div>
             """, unsafe_allow_html=True)
-            
-            if st.button(f"View Details", key=f"customer_view_business_{i}", use_container_width=True):
-                st.session_state.selected_business_id = business.get('id')
-                st.session_state.page = "customer_business_detail"
-                st.rerun()
-    else:
-        st.info("No credit accounts yet. Connect to a business to get started.")
     
-    # Add a divider for clean separation
-    st.markdown("<hr style='margin: 1.5rem 0; opacity: 0.3;'>", unsafe_allow_html=True)
-    
-    # QR code scanner with improved layout
-    st.markdown("<h3 style='text-align: center; margin-bottom: 1rem; font-size: 1.8rem;'>Connect to Business</h3>", unsafe_allow_html=True)
-    
-    # Simplified connection options - no tabs for easier understanding
-    with st.container():
-        st.markdown("<h4 style='margin-bottom: 1rem; text-align: center;'>Enter Business Details</h4>", unsafe_allow_html=True)
+    with col2:
+        # QR code scanner section
+        st.markdown('<div class="business-card">', unsafe_allow_html=True)
+        st.markdown('<div class="section-header">Connect to Business</div>', unsafe_allow_html=True)
         
         with st.form("connect_business_form"):
             business_code = st.text_input("Business ID", placeholder="Enter the business ID", 
@@ -1235,7 +1232,9 @@ def customer_dashboard():
             business_pin = st.text_input("Access PIN (4-digit)", max_chars=4, placeholder="Enter the 4-digit PIN",
                                help="Ask the business owner for their 4-digit PIN")
             
+            st.markdown('<div class="primary-action">', unsafe_allow_html=True)
             connect_button = st.form_submit_button("Connect to Business", use_container_width=True)
+            st.markdown('</div>', unsafe_allow_html=True)
             
             if connect_button and business_code:
                 # Check if business exists
@@ -1253,20 +1252,49 @@ def customer_dashboard():
                         st.rerun()
                 else:
                     st.error("Business not found. Please check the code and try again.")
+        
+        st.markdown('</div>', unsafe_allow_html=True)
+        
+        # Quick stats if the user has businesses
+        if businesses:
+            st.markdown('<div class="business-card">', unsafe_allow_html=True)
+            st.markdown('<div class="section-header">Your Stats</div>', unsafe_allow_html=True)
+            
+            # Total businesses
+            st.markdown(f"""
+            <div style="margin-bottom: 1rem;">
+                <p style="font-size: 1rem; color: #666; margin-bottom: 0.2rem;">Total Businesses</p>
+                <p style="font-size: 1.5rem; font-weight: 600; margin-top: 0;">{len(businesses)}</p>
+            </div>
+            """, unsafe_allow_html=True)
+            
+            # Calculate total balance
+            total_balance = sum(float(business.get('current_balance', 0)) for business in businesses)
+            
+            # Total outstanding
+            st.markdown(f"""
+            <div>
+                <p style="font-size: 1rem; color: #666; margin-bottom: 0.2rem;">Total Outstanding</p>
+                <p style="font-size: 1.5rem; font-weight: 600; margin-top: 0; {'color: #4CAF50;' if total_balance > 0 else 'color: #F44336;'} ">₹{total_balance}</p>
+            </div>
+            """, unsafe_allow_html=True)
+            
+            st.markdown('</div>', unsafe_allow_html=True)
     
-    st.markdown("<div style='margin-top: 1.5rem;'></div>", unsafe_allow_html=True)
-    
-    # Camera option below text input
-    st.markdown("<h4 style='text-align: center; margin-bottom: 1rem;'>Or Scan QR Code</h4>", unsafe_allow_html=True)
+    # Camera option below in its own section
+    st.markdown('<div class="app-section" style="margin-top: 1.5rem;">', unsafe_allow_html=True)
+    st.markdown('<div class="section-header">Or Scan QR Code</div>', unsafe_allow_html=True)
     
     # Center the camera input
-    col1, col2, col3 = st.columns([1, 3, 1])
+    col1, col2, col3 = st.columns([1, 2, 1])
     with col2:
         uploaded_qr = st.camera_input("Take a picture of QR code", key="qr_camera")
         
         if uploaded_qr is not None:
             # In a real app, we would process the QR code image here
             st.info("QR code processing would happen here. For now, please use the manual entry option above.")
+    
+    st.markdown('</div>', unsafe_allow_html=True)
 
 def customer_business_detail():
     # Hide the default Streamlit menu
@@ -1278,66 +1306,15 @@ def customer_business_detail():
     """
     st.markdown(hide_streamlit_style, unsafe_allow_html=True)
     
-    # Add larger font and easier to read styles
-    st.markdown("""
-    <style>
-    /* Larger text for better readability */
-    .streamlit-container {
-        font-size: 18px !important;
-    }
-    /* Bigger touch targets */
-    button, select, input {
-        min-height: 48px !important;
-        font-size: 16px !important;
-    }
-    /* Improved spacing */
-    .large-card {
-        padding: 20px;
-        border-radius: 10px;
-        background-color: #f8f9fa;
-        margin-bottom: 20px;
-        border: 1px solid #ddd;
-        text-align: center;
-    }
-    .card-title {
-        font-size: 1.2rem;
-        margin-bottom: 0.5rem;
-        color: #555;
-    }
-    .card-value {
-        font-size: 1.8rem;
-        font-weight: bold;
-    }
-    .transaction-item {
-        padding: 15px;
-        border-radius: 10px;
-        background-color: #f8f9fa;
-        margin-bottom: 15px;
-        border: 1px solid #ddd;
-    }
-    .transaction-type {
-        font-size: 1.3rem;
-        font-weight: bold;
-        margin-bottom: 5px;
-    }
-    .transaction-amount {
-        font-size: 1.4rem;
-        margin-bottom: 5px;
-    }
-    .transaction-date {
-        font-size: 1rem;
-        color: #666;
-    }
-    </style>
-    """, unsafe_allow_html=True)
-
-    # Large back button
-    if st.button("← Back to Dashboard", key="back_to_dashboard", use_container_width=True):
-        st.session_state.page = "customer_dashboard"
-        st.rerun()
+    # Back button in a cleaner layout
+    col_back, col_title = st.columns([1, 3])
+    with col_back:
+        if st.button("← Back", key="back_to_dashboard", use_container_width=True):
+            st.session_state.page = "customer_dashboard"
+            st.rerun()
     
-    # Main heading
-    st.markdown(f"<h1 style='text-align: center; margin: 1rem 0; font-size: 2.2rem;'>Business Details</h1>", unsafe_allow_html=True)
+    with col_title:
+        st.markdown("<h1 class='main-header'>Business Details</h1>", unsafe_allow_html=True)
     
     business_id = st.session_state.selected_business_id
     customer_id = st.session_state.customer_id
@@ -1346,174 +1323,157 @@ def customer_business_detail():
     business, customer, transactions, credit_total, payment_total, current_balance = \
         data_service.get_customer_business_view(business_id, customer_id)
     
-    st.markdown(f"<h2 style='text-align: center; margin-bottom: 1.5rem; font-size: 1.8rem;'>{business.get('name', 'Unknown Business')}</h2>", unsafe_allow_html=True)
-    
-    # Summary cards in a clean, modern layout
-    col1, col2 = st.columns(2)
-    with col1:
-        st.markdown(f"""
-        <div class='large-card'>
-            <div class='card-title'>Total Credit</div>
-            <div class='card-value' style='color: #E57373;'>₹{credit_total}</div>
-        </div>
-        """, unsafe_allow_html=True)
-    
-    with col2:
-        st.markdown(f"""
-        <div class='large-card'>
-            <div class='card-title'>Total Payments</div>
-            <div class='card-value' style='color: #81C784;'>₹{payment_total}</div>
-        </div>
-        """, unsafe_allow_html=True)
-    
-    # Current balance - make this stand out
+    # Business info section
+    st.markdown('<div class="business-card">', unsafe_allow_html=True)
     st.markdown(f"""
-    <div class='large-card' style='background-color: #e8eaf6; border: 2px solid #3f51b5;'>
-        <div class='card-title' style='font-size: 1.4rem;'>Current Balance</div>
-        <div class='card-value' style='font-size: 2.2rem; color: {"#E57373" if float(current_balance) > 0 else "#81C784"};'>₹{current_balance}</div>
+    <div style="display: flex; justify-content: space-between; align-items: center;">
+        <div>
+            <h2 style="margin-bottom: 0.2rem; font-size: 1.8rem;">{business.get('name', 'Unknown Business')}</h2>
+        </div>
+        <div>
+            <p style="color: #666; margin-bottom: 0;">Current Balance</p>
+            <p style="font-size: 1.5rem; font-weight: 600; margin-top: 0; text-align: right; {'color: #4CAF50;' if float(current_balance) > 0 else 'color: #F44336;'}">
+                ₹{current_balance}
+            </p>
+        </div>
     </div>
     """, unsafe_allow_html=True)
+    st.markdown('</div>', unsafe_allow_html=True)
     
-    # Add a divider for clean separation
-    st.markdown("<hr style='margin: 1.5rem 0; opacity: 0.3;'>", unsafe_allow_html=True)
-    
-    # Transaction forms in a cleaner layout - simplified to buttons first
-    st.markdown("<h3 style='text-align: center; margin-bottom: 1.5rem; font-size: 1.8rem;'>What would you like to do?</h3>", unsafe_allow_html=True)
-    
-    # Action buttons first for clearer navigation
-    col1, col2 = st.columns(2)
-    with col1:
-        if st.button("Take Credit", key="show_credit_form", use_container_width=True):
-            st.session_state.show_form = "credit"
-            st.rerun()
+    # Layout for the rest of the page
+    col1, col2 = st.columns([2, 1])
     
     with col2:
-        if st.button("Make Payment", key="show_payment_form", use_container_width=True):
-            st.session_state.show_form = "payment"
-            st.rerun()
-    
-    # Initialize session state if needed
-    if "show_form" not in st.session_state:
-        st.session_state.show_form = None
-    
-    # Show the selected form if any
-    if st.session_state.show_form == "credit":
-        st.markdown("<h3 style='text-align: center; margin: 1.5rem 0 1rem 0;'>Take Credit</h3>", unsafe_allow_html=True)
+        # Summary cards in a single container
+        st.markdown('<div class="business-card">', unsafe_allow_html=True)
+        st.markdown('<div class="section-header">Transaction Summary</div>', unsafe_allow_html=True)
         
-        with st.form("take_credit_form"):
-            # More elegant number input with clear layout
-            credit_amount = st.number_input("Credit Amount (₹)", min_value=1, value=100, 
-                                         step=10, help="Enter the amount of credit to take")
-            
-            credit_note = st.text_input("Note (optional)", key="credit_note_customer", 
-                                      placeholder="What is this credit for?")
-            
-            credit_col1, credit_col2 = st.columns(2)
-            with credit_col1:
-                if st.form_submit_button("Cancel", use_container_width=True):
-                    st.session_state.show_form = None
-                    st.rerun()
-                    
-            with credit_col2:
-                submit_credit = st.form_submit_button("Confirm Credit", use_container_width=True)
-            
-            if submit_credit:
-                # Create direct credit transaction
-                transaction_data = {
-                    'id': str(uuid.uuid4()),
-                    'business_id': business_id,
-                    'customer_id': customer_id,
-                    'amount': credit_amount,
-                    'transaction_type': 'credit',
-                    'notes': credit_note,
-                    'created_at': datetime.now().isoformat()
-                }
-                
-                success, _ = data_service.create_transaction(transaction_data)
-                if success:
-                    st.success(f"Successfully recorded ₹{credit_amount} credit")
-                    st.session_state.show_form = None
-                    st.rerun()
-                else:
-                    st.error("Failed to record credit transaction")
-    
-    elif st.session_state.show_form == "payment":
-        st.markdown("<h3 style='text-align: center; margin: 1.5rem 0 1rem 0;'>Make Payment</h3>", unsafe_allow_html=True)
+        st.markdown(f"""
+        <div style="margin-bottom: 1rem;">
+            <p style="font-size: 0.9rem; color: #666; margin-bottom: 0.2rem;">Total Credit Taken</p>
+            <p style="font-size: 1.5rem; font-weight: 600; margin-top: 0; color: #4CAF50;">₹{credit_total}</p>
+        </div>
         
-        with st.form("make_payment_form"):
-            # More elegant number input with clear layout
-            payment_amount = st.number_input("Payment Amount (₹)", min_value=1, value=100, 
-                                          step=10, help="Enter the amount you paid to the business")
-            
-            payment_note = st.text_input("Note (optional)", key="payment_note_customer", 
-                                       placeholder="Any details about this payment?")
-            
-            payment_col1, payment_col2 = st.columns(2)
-            with payment_col1:
-                if st.form_submit_button("Cancel", use_container_width=True):
-                    st.session_state.show_form = None
-                    st.rerun()
+        <div>
+            <p style="font-size: 0.9rem; color: #666; margin-bottom: 0.2rem;">Total Payments Made</p>
+            <p style="font-size: 1.5rem; font-weight: 600; margin-top: 0; color: #F44336;">₹{payment_total}</p>
+        </div>
+        """, unsafe_allow_html=True)
+        
+        st.markdown('</div>', unsafe_allow_html=True)
+        
+        # Add transaction forms
+        st.markdown('<div class="business-card">', unsafe_allow_html=True)
+        st.markdown('<div class="section-header">Add Transaction</div>', unsafe_allow_html=True)
+        
+        tab1, tab2 = st.tabs(["Take Credit", "Make Payment"])
+        
+        with tab1:
+            with st.form("take_credit_form"):
+                credit_amount = st.number_input("Credit Amount", min_value=1, value=100, 
+                                       step=10, help="Enter the amount of credit to take")
+                
+                credit_note = st.text_input("Note (optional)", key="credit_note_customer", 
+                                  placeholder="What is this credit for?")
+                
+                st.markdown('<div class="primary-action">', unsafe_allow_html=True)
+                submit_credit = st.form_submit_button("Take Credit")
+                st.markdown('</div>', unsafe_allow_html=True)
+                
+                if submit_credit:
+                    # Create direct credit transaction
+                    transaction_data = {
+                        'id': str(uuid.uuid4()),
+                        'business_id': business_id,
+                        'customer_id': customer_id,
+                        'amount': credit_amount,
+                        'transaction_type': 'credit',
+                        'notes': credit_note,
+                        'created_at': datetime.now().isoformat()
+                    }
                     
-            with payment_col2:
-                submit_payment = st.form_submit_button("Confirm Payment", use_container_width=True)
-            
-            if submit_payment:
-                # Create payment transaction
-                transaction_data = {
-                    'id': str(uuid.uuid4()),
-                    'business_id': business_id,
-                    'customer_id': customer_id,
-                    'amount': payment_amount,
-                    'transaction_type': 'payment',
-                    'notes': payment_note,
-                    'created_at': datetime.now().isoformat()
-                }
+                    success, _ = data_service.create_transaction(transaction_data)
+                    if success:
+                        st.success(f"Successfully recorded ₹{credit_amount} credit")
+                        st.rerun()
+                    else:
+                        st.error("Failed to record credit transaction")
+        
+        with tab2:
+            with st.form("make_payment_form"):
+                payment_amount = st.number_input("Payment Amount", min_value=1, value=100, 
+                                        step=10, help="Enter the amount you paid to the business")
                 
-                success, _ = data_service.create_transaction(transaction_data)
-                if success:
-                    st.success(f"Successfully recorded ₹{payment_amount} payment")
-                    st.session_state.show_form = None
-                    st.rerun()
+                payment_note = st.text_input("Note (optional)", key="payment_note_customer", 
+                                   placeholder="Any details about this payment?")
+                
+                st.markdown('<div class="primary-action">', unsafe_allow_html=True)
+                submit_payment = st.form_submit_button("Make Payment")
+                st.markdown('</div>', unsafe_allow_html=True)
+                
+                if submit_payment:
+                    # Create payment transaction
+                    transaction_data = {
+                        'id': str(uuid.uuid4()),
+                        'business_id': business_id,
+                        'customer_id': customer_id,
+                        'amount': payment_amount,
+                        'transaction_type': 'payment',
+                        'notes': payment_note,
+                        'created_at': datetime.now().isoformat()
+                    }
+                    
+                    success, _ = data_service.create_transaction(transaction_data)
+                    if success:
+                        st.success(f"Successfully recorded ₹{payment_amount} payment")
+                        st.rerun()
+                    else:
+                        st.error("Failed to record payment transaction")
+        
+        st.markdown('</div>', unsafe_allow_html=True)
+    
+    with col1:
+        # Transaction history
+        st.markdown('<div class="app-section">', unsafe_allow_html=True)
+        st.markdown('<div class="section-header">Transaction History</div>', unsafe_allow_html=True)
+        
+        if transactions:
+            for transaction in transactions:
+                transaction_type = transaction.get('transaction_type', '')
+                amount = float(transaction.get('amount', 0))
+                date = data_service.format_datetime(transaction.get('created_at', ''))
+                note = transaction.get('notes', '')
+                
+                if transaction_type == 'credit':
+                    icon = "📥"
+                    class_name = "credit-transaction"
+                    type_label = "Credit Taken"
+                elif transaction_type == 'payment':
+                    icon = "📤"
+                    class_name = "payment-transaction"
+                    type_label = "Payment Made"
                 else:
-                    st.error("Failed to record payment transaction")
-    
-    # Add a divider for clean separation
-    st.markdown("<hr style='margin: 1.5rem 0; opacity: 0.3;'>", unsafe_allow_html=True)
-    
-    # Transaction history with clearer formatting
-    st.markdown("<h3 style='text-align: center; margin-bottom: 1rem; font-size: 1.8rem;'>Transaction History</h3>", unsafe_allow_html=True)
-    
-    if transactions:
-        for t in transactions:
-            transaction_type = t.get('transaction_type', '')
-            amount = float(t.get('amount', 0))
-            date = data_service.format_datetime(t.get('created_at', ''))
-            note = t.get('notes', '')
-            
-            # Simplified transaction display with clear formatting
-            if transaction_type == 'credit':
-                icon = "🔴"
-                color = "#E57373"
-                type_text = "Credit"
-            elif transaction_type == 'payment':
-                icon = "🟢"
-                color = "#81C784"
-                type_text = "Payment"
-            else:
-                icon = "⚪"
-                color = "#9E9E9E"
-                type_text = transaction_type.capitalize()
+                    icon = "🔄"
+                    class_name = ""
+                    type_label = transaction_type.replace('_', ' ').title()
                 
-            st.markdown(f"""
-            <div class='transaction-item'>
-                <div class='transaction-type' style='color: {color};'>{icon} {type_text}</div>
-                <div class='transaction-amount'>₹{amount:.2f}</div>
-                <div class='transaction-date'>{date}</div>
-                {f"<div style='margin-top: 5px; font-style: italic;'>{note}</div>" if note else ""}
-            </div>
-            """, unsafe_allow_html=True)
-    else:
-        st.info("No transactions yet")
+                st.markdown(f"""
+                <div class="transaction {class_name}">
+                    <div style="display: flex; align-items: center;">
+                        <div style="font-size: 1.5rem; margin-right: 10px;">{icon}</div>
+                        <div style="flex-grow: 1;">
+                            <div class="transaction-type">{type_label}</div>
+                            <div class="transaction-amount">₹{amount}</div>
+                            <div class="transaction-date">{date}</div>
+                            {f'<div style="font-style: italic; margin-top: 0.25rem;">{note}</div>' if note else ''}
+                        </div>
+                    </div>
+                </div>
+                """, unsafe_allow_html=True)
+        else:
+            st.info("No transaction history yet with this business.")
+        
+        st.markdown('</div>', unsafe_allow_html=True)
 
 def customer_profile():
     st.markdown("<h1 class='main-header'>My Profile</h1>", unsafe_allow_html=True)
