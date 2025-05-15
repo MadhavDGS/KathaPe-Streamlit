@@ -456,10 +456,10 @@ theme_css = """
             border: 1px solid #e0e0e0 !important;
         }
         /* Tab styling for light mode */
-        .stTabs [data-baseweb="tab-list"] {
+    .stTabs [data-baseweb="tab-list"] {
             background-color: #f0f2f6;
-        }
-        .stTabs [data-baseweb="tab"] {
+    }
+    .stTabs [data-baseweb="tab"] {
             background-color: #e0e5eb;
         }
         .stTabs [data-baseweb="tab"][aria-selected="true"] {
@@ -636,20 +636,20 @@ def login_page():
                 user_type = st.selectbox("Login As", ["business", "customer"], 
                                  help="Select whether you're a business or a customer")
             
-            col1, col2, col3 = st.columns([1, 2, 1])
-            with col2:
-                submit = st.form_submit_button("Login", use_container_width=True)
-            
-            if submit:
-                if not phone or not password:
-                    st.error("Please enter both phone number and password")
-                else:
-                        success, user = auth_service.login(phone, password, user_type)
-                    if success:
-                        st.success("Login successful!")
-                        st.rerun()
+                col1, col2, col3 = st.columns([1, 2, 1])
+                with col2:
+                    submit = st.form_submit_button("Login", use_container_width=True)
+
+                if submit:
+                    if not phone or not password:
+                        st.error("Please enter both phone number and password")
                     else:
-                        st.error("User not found or invalid credentials. Please check your details and try again.")
+                        success, user = auth_service.login(phone, password, user_type)
+                        if success:
+                            st.success("Login successful!")
+                            st.rerun()
+                        else:
+                            st.error("User not found or invalid credentials. Please check your details and try again.")
     
             # Sign up link
             col1, col2, col3 = st.columns([1, 2, 1])
@@ -729,13 +729,13 @@ def login_page():
                     st.error("Password should be at least 6 characters long")
                 else:
                         success, message = auth_service.register(r_phone, r_password, r_name, r_user_type)
-                    if success:
-                        st.success(message)
+                if success:
+                    st.success(message)
                             st.session_state.show_signup = False
                             st.rerun()
-                    else:
-                        st.error(message)
-            
+                else:
+                    st.error(message)
+    
             # Login link
             col1, col2, col3 = st.columns([1, 2, 1])
             with col2:
@@ -889,7 +889,7 @@ def business_dashboard():
     # Recent transactions with clearer formatting
     st.markdown("<h3 style='text-align: center; margin-bottom: 1rem; font-size: 1.8rem;'>Recent Transactions</h3>", unsafe_allow_html=True)
     
-    if transactions:
+        if transactions:
         for transaction in transactions[:5]:  # Show only most recent 5
             transaction_type = transaction.get('transaction_type', '')
             amount = float(transaction.get('amount', 0))
@@ -906,8 +906,8 @@ def business_dashboard():
             else:
                 type_display = transaction_type.replace('_', ' ').title()
                 color = "#9E9E9E"  # Grey
-            
-            st.markdown(f"""
+                
+                st.markdown(f"""
             <div class='transaction-item'>
                 <div style='display: flex; justify-content: space-between;'>
                     <div>
@@ -919,9 +919,9 @@ def business_dashboard():
                         <div style='font-size: 0.9rem; color: #666;'>{date}</div>
                     </div>
                 </div>
-            </div>
-            """, unsafe_allow_html=True)
-    else:
+                </div>
+                """, unsafe_allow_html=True)
+        else:
         st.info("No transactions yet. Add your first customer and start recording transactions.")
 
 def business_customers():
@@ -1022,8 +1022,8 @@ def business_customers():
             customer_phone = st.text_input("Customer Phone", placeholder="10-digit number", max_chars=10)
         
         submit_customer = st.form_submit_button("Add Customer", use_container_width=True)
-        
-        if submit_customer:
+            
+            if submit_customer:
             if not customer_name or not customer_phone:
                 st.error("Please enter both name and phone number")
             elif len(customer_phone) != 10 or not customer_phone.isdigit():
@@ -1383,7 +1383,7 @@ def business_customer_detail():
                         if transaction_response and transaction_response.data:
                             st.success(f"Approved ₹{amount} credit request")
                             st.rerun()
-                        else:
+            else:
                             st.error("Failed to approve. Please try again.")
                 
                 with col2:
@@ -1394,7 +1394,7 @@ def business_customer_detail():
                         if delete_response:
                             st.success("Request rejected")
                             st.rerun()
-                        else:
+    else:
                             st.error("Failed to reject. Please try again.")
         
         # Show regular transactions
@@ -1552,9 +1552,9 @@ def customer_dashboard():
             """, unsafe_allow_html=True)
             
             if st.button(f"View Details", key=f"customer_view_business_{i}", use_container_width=True):
-                st.session_state.selected_business_id = business.get('id')
-                st.session_state.page = "customer_business_detail"
-                st.rerun()
+                    st.session_state.selected_business_id = business.get('id')
+                    st.session_state.page = "customer_business_detail"
+                    st.rerun()
     else:
         st.info("No credit accounts yet. Connect to a business to get started.")
     
@@ -1576,23 +1576,23 @@ def customer_dashboard():
                                help="Ask the business owner for their 4-digit PIN")
             
             connect_button = st.form_submit_button("Connect to Business", use_container_width=True)
+        
+        if connect_button and business_code:
+            # Check if business exists
+            business_response = data_service.query_table('businesses', filters=[('id', 'eq', business_code)])
             
-            if connect_button and business_code:
-                # Check if business exists
-                business_response = data_service.query_table('businesses', filters=[('id', 'eq', business_code)])
-                
-                if business_response and business_response.data:
-                    business = business_response.data[0]
-                    # Verify PIN if provided
-                    if business_pin and business_pin != business.get('access_pin', ''):
-                        st.error("Incorrect business PIN. Please check and try again.")
-                    else:
-                        # Ensure credit relationship exists
-                        data_service.ensure_customer_credit_exists(business_code, customer_id)
-                        st.success("Connected to business successfully!")
-                        st.rerun()
+            if business_response and business_response.data:
+                business = business_response.data[0]
+                # Verify PIN if provided
+                if business_pin and business_pin != business.get('access_pin', ''):
+                    st.error("Incorrect business PIN. Please check and try again.")
                 else:
-                    st.error("Business not found. Please check the code and try again.")
+                    # Ensure credit relationship exists
+                    data_service.ensure_customer_credit_exists(business_code, customer_id)
+                    st.success("Connected to business successfully!")
+                    st.rerun()
+            else:
+                st.error("Business not found. Please check the code and try again.")
     
     st.markdown("<div style='margin-top: 1.5rem;'></div>", unsafe_allow_html=True)
     
@@ -1672,8 +1672,8 @@ def customer_business_detail():
 
     # Large back button
     if st.button("← Back to Dashboard", key="back_to_dashboard", use_container_width=True):
-            st.session_state.page = "customer_dashboard"
-            st.rerun()
+        st.session_state.page = "customer_dashboard"
+        st.rerun()
     
     # Main heading
     st.markdown(f"<h1 style='text-align: center; margin: 1rem 0; font-size: 2.2rem;'>Business Details</h1>", unsafe_allow_html=True)
@@ -1823,10 +1823,10 @@ def customer_business_detail():
     st.markdown("<h3 style='text-align: center; margin-bottom: 1rem; font-size: 1.8rem;'>Transaction History</h3>", unsafe_allow_html=True)
     
     if transactions:
-            for t in transactions:
-                transaction_type = t.get('transaction_type', '')
-                amount = float(t.get('amount', 0))
-                date = data_service.format_datetime(t.get('created_at', ''))
+        for t in transactions:
+            transaction_type = t.get('transaction_type', '')
+            amount = float(t.get('amount', 0))
+            date = data_service.format_datetime(t.get('created_at', ''))
                 note = t.get('notes', '')
                 
             # Simplified transaction display with clear formatting
@@ -1842,7 +1842,7 @@ def customer_business_detail():
                 icon = "⚪"
                 color = "#9E9E9E"
                 type_text = transaction_type.capitalize()
-                
+            
             st.markdown(f"""
             <div class='transaction-item'>
                 <div class='transaction-type' style='color: {color};'>{icon} {type_text}</div>
@@ -1995,7 +1995,7 @@ def main():
                 if st.button("Logout", key="customer_logout_btn"):
                     auth_service.logout()
                     st.rerun()
-            
+    
             # Render appropriate customer page
             if current_page == "customer_dashboard":
                 customer_dashboard()
