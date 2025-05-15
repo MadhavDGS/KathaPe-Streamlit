@@ -1277,6 +1277,9 @@ def customer_profile():
 
 # App router
 def main():
+    # Initialize mock data for auth service
+    auth_service.init_mock_data()
+    
     # On first run or after login, set default page based on user type
     if "initialized" not in st.session_state:
         st.session_state.initialized = True

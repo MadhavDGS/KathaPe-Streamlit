@@ -58,6 +58,9 @@ def mock_login(phone, password, user_type='customer'):
     Attempt a login with proper error handling
     Returns (success, user_data_or_error_message) tuple
     """
+    # Initialize mock data if it's not already present
+    init_mock_data()
+    
     # Try Supabase login if available
     try:
         supabase = supabase_service.get_supabase_admin_client()
@@ -190,6 +193,9 @@ def mock_register(phone, password, name, user_type='customer'):
     Tries Supabase first, falls back to mock system
     Returns (success, message) tuple
     """
+    # Initialize mock data if it's not already present
+    init_mock_data()
+    
     # First try to register with Supabase if available
     try:
         supabase = supabase_service.get_supabase_admin_client()
@@ -294,6 +300,9 @@ def mock_query_table(table_name, query_type='select', fields='*', filters=None, 
     """
     Mock implementation of query_table function
     """
+    # Initialize mock data if it's not already present
+    init_mock_data()
+    
     # Response class with data attribute to match Supabase responses
     class MockResponse:
         def __init__(self, data):
