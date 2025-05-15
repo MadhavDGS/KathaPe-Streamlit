@@ -10,7 +10,7 @@ try:
     SUPABASE_AVAILABLE = True
 except ImportError:
     SUPABASE_AVAILABLE = False
-    print("Supabase module not available. Please install with: pip install supabase")
+    print("Supabase module not available. Please install with: pip install supabase==1.0.4")
 
 # Load environment variables
 load_dotenv()
@@ -23,13 +23,6 @@ DB_RETRY_DELAY = 1  # seconds
 supabase_client = None
 supabase_admin_client = None
 create_client_fn = None
-
-# Try to determine if ClientOptions is available
-try:
-    from supabase.lib.client_options import ClientOptions
-    HAS_CLIENT_OPTIONS = True
-except ImportError:
-    HAS_CLIENT_OPTIONS = False
 
 def get_supabase_client():
     """Get a regular Supabase client for normal operations"""
@@ -44,20 +37,23 @@ def get_supabase_client():
     if supabase_client:
         return supabase_client
     
-    # Get Supabase credentials
-    # Try to get from streamlit secrets first, then environment variables, then fallback to defaults
+    # Get Supabase credentials from Streamlit secrets or environment
     try:
         supabase_url = st.secrets["SUPABASE_URL"]
+        print(f"Using Supabase URL from secrets: {supabase_url[:20]}...")
     except:
         supabase_url = os.getenv('SUPABASE_URL', "https://ghbmfgomnqmffixfkdyp.supabase.co")
+        print(f"Using Supabase URL from env or default: {supabase_url[:20]}...")
     
     try:
         supabase_key = st.secrets["SUPABASE_KEY"]
+        print("Using Supabase key from secrets")
     except:
         supabase_key = os.getenv('SUPABASE_KEY', "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImdoYm1mZ29tbnFtZmZpeGZrZHlwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDcxNDAxNTcsImV4cCI6MjA2MjcxNjE1N30.Fw750xiDWVPrl6ssr9p6AJTt--8zvnPoboxJiURvsOI")
+        print("Using Supabase key from env or default")
     
     if not supabase_url or not supabase_key:
-        print("Supabase URL and key must be set in environment variables")
+        print("Supabase URL and key must be set in environment variables or secrets")
         return None
     
     # Try to create a Supabase client with retry logic
@@ -70,18 +66,13 @@ def get_supabase_client():
                     from supabase import create_client
                     create_client_fn = create_client
                 
-                # Create a new client with proper options
-                # Try different ways to create the client depending on version
-                try:
-                    # Simplest approach - no options at all
-                    supabase_client = create_client_fn(supabase_url, supabase_key)
-                    
-                    # Test the connection right away to catch any issues
-                    test_response = supabase_client.table('users').select('id').limit(1).execute()
-                    print("Successfully connected to Supabase")
-                    return supabase_client
-                except Exception as e:
-                    raise Exception(f"Failed to create Supabase client: {str(e)}")
+                # Create client - for version 1.0.4, no options parameter
+                supabase_client = create_client_fn(supabase_url, supabase_key)
+                
+                # Test the connection
+                test_response = supabase_client.table('users').select('id').limit(1).execute()
+                print("Successfully connected to Supabase")
+                return supabase_client
             except Exception as e:
                 if attempt < DB_RETRY_ATTEMPTS - 1:
                     print(f"Supabase connection attempt {attempt+1} failed: {str(e)}. Retrying...")
@@ -106,20 +97,23 @@ def get_supabase_admin_client():
     if supabase_admin_client:
         return supabase_admin_client
     
-    # Get Supabase credentials
-    # Try to get from streamlit secrets first, then environment variables, then fallback to defaults
+    # Get Supabase credentials from Streamlit secrets or environment
     try:
         supabase_url = st.secrets["SUPABASE_URL"]
+        print(f"Using Supabase URL from secrets: {supabase_url[:20]}...")
     except:
         supabase_url = os.getenv('SUPABASE_URL', "https://ghbmfgomnqmffixfkdyp.supabase.co")
+        print(f"Using Supabase URL from env or default: {supabase_url[:20]}...")
     
     try:
         supabase_service_key = st.secrets["SUPABASE_SERVICE_KEY"]
+        print("Using Supabase service key from secrets")
     except:
         supabase_service_key = os.getenv('SUPABASE_SERVICE_KEY', "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImdoYm1mZ29tbnFtZmZpeGZrZHlwIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc0NzE0MDE1NywiZXhwIjoyMDYyNzE2MTU3fQ.RnbSqdIM5A67NuKHDOTdpqpu6G2zKJfhMeQapGUI2kw")
+        print("Using Supabase service key from env or default")
     
     if not supabase_url or not supabase_service_key:
-        print("Supabase URL and service key must be set in environment variables")
+        print("Supabase URL and service key must be set in environment variables or secrets")
         return None
     
     # Try to create a Supabase admin client with retry logic
@@ -132,18 +126,13 @@ def get_supabase_admin_client():
                     from supabase import create_client
                     create_client_fn = create_client
                 
-                # Create admin client with proper options
-                # Try different ways to create the client depending on version
-                try:
-                    # Simplest approach - no options at all
-                    supabase_admin_client = create_client_fn(supabase_url, supabase_service_key)
-                    
-                    # Test the connection right away to catch any issues
-                    test_response = supabase_admin_client.table('users').select('id').limit(1).execute()
-                    print("Successfully connected to Supabase with admin privileges")
-                    return supabase_admin_client
-                except Exception as e:
-                    raise Exception(f"Failed to create Supabase admin client: {str(e)}")
+                # Create client - for version 1.0.4, no options parameter
+                supabase_admin_client = create_client_fn(supabase_url, supabase_service_key)
+                
+                # Test the connection
+                test_response = supabase_admin_client.table('users').select('id').limit(1).execute()
+                print("Successfully connected to Supabase with admin privileges")
+                return supabase_admin_client
             except Exception as e:
                 if attempt < DB_RETRY_ATTEMPTS - 1:
                     print(f"Supabase admin connection attempt {attempt+1} failed: {str(e)}. Retrying...")
