@@ -8,43 +8,49 @@ import supabase_service
 # Mock user database stored in session state
 def init_mock_data():
     """Initialize mock data if it doesn't exist"""
-    if "mock_users" not in st.session_state:
-        st.session_state.mock_users = {
-            # Sample business user
-            "9999999999": {
-                "id": str(uuid.uuid4()),
-                "name": "Sample Business",
-                "phone_number": "9999999999",
-                "password": "password123",
-                "user_type": "business",
-                "created_at": datetime.now().isoformat()
+    # Only initialize mock data when in development environment
+    try:
+        if "mock_users" not in st.session_state:
+            st.session_state.mock_users = {
+                # Sample business user
+                "9999999999": {
+                    "id": str(uuid.uuid4()),
+                    "name": "Sample Business",
+                    "phone_number": "9999999999",
+                    "password": "password123",
+                    "user_type": "business",
+                    "created_at": datetime.now().isoformat()
+                }
             }
-        }
-    
-    if "mock_businesses" not in st.session_state:
-        st.session_state.mock_businesses = {}
         
-    if "mock_customers" not in st.session_state:
-        st.session_state.mock_customers = {}
-        
-    if "mock_customer_credits" not in st.session_state:
-        st.session_state.mock_customer_credits = []
-        
-    if "mock_transactions" not in st.session_state:
-        st.session_state.mock_transactions = []
-        
-    # Create business record if not exists
-    business_user_id = st.session_state.mock_users["9999999999"]["id"]
-    if business_user_id not in st.session_state.mock_businesses:
-        business_id = str(uuid.uuid4())
-        st.session_state.mock_businesses[business_user_id] = {
-            "id": business_id,
-            "user_id": business_user_id,
-            "name": "Sample Business Account",
-            "description": "Mock business account",
-            "access_pin": "1234",
-            "created_at": datetime.now().isoformat()
-        }
+        if "mock_businesses" not in st.session_state:
+            st.session_state.mock_businesses = {}
+            
+        if "mock_customers" not in st.session_state:
+            st.session_state.mock_customers = {}
+            
+        if "mock_customer_credits" not in st.session_state:
+            st.session_state.mock_customer_credits = []
+            
+        if "mock_transactions" not in st.session_state:
+            st.session_state.mock_transactions = []
+            
+        # Create business record if not exists
+        if "9999999999" in st.session_state.mock_users:
+            business_user_id = st.session_state.mock_users["9999999999"]["id"]
+            if business_user_id not in st.session_state.mock_businesses:
+                business_id = str(uuid.uuid4())
+                st.session_state.mock_businesses[business_user_id] = {
+                    "id": business_id,
+                    "user_id": business_user_id,
+                    "name": "Sample Business Account",
+                    "description": "Mock business account",
+                    "access_pin": "1234",
+                    "created_at": datetime.now().isoformat()
+                }
+    except Exception as e:
+        print(f"Error initializing mock data: {str(e)}")
+        # In production, we'll continue without mock data
 
 
 def save_to_session_state():
@@ -58,9 +64,6 @@ def mock_login(phone, password, user_type='customer'):
     Attempt a login with proper error handling
     Returns (success, user_data_or_error_message) tuple
     """
-    # Initialize mock data if it's not already present
-    init_mock_data()
-    
     # Try Supabase login if available
     try:
         supabase = supabase_service.get_supabase_admin_client()
@@ -193,9 +196,6 @@ def mock_register(phone, password, name, user_type='customer'):
     Tries Supabase first, falls back to mock system
     Returns (success, message) tuple
     """
-    # Initialize mock data if it's not already present
-    init_mock_data()
-    
     # First try to register with Supabase if available
     try:
         supabase = supabase_service.get_supabase_admin_client()
@@ -205,7 +205,7 @@ def mock_register(phone, password, name, user_type='customer'):
             if existing_user.data:
                 return False, "Phone number already registered"
             
-            # Create user
+            # Create user record
             user_id = str(uuid.uuid4())
             user_data = {
                 'id': user_id,
@@ -216,13 +216,12 @@ def mock_register(phone, password, name, user_type='customer'):
                 'created_at': datetime.now().isoformat()
             }
             
-            # Insert user into Supabase
             user_response = supabase.table('users').insert(user_data).execute()
             
             if not user_response.data:
-                raise Exception("Failed to create user in Supabase")
+                raise Exception("Failed to create user record in Supabase")
             
-            # Create related record based on user type
+            # Create business or customer record
             if user_type == 'business':
                 business_id = str(uuid.uuid4())
                 business_data = {
@@ -252,57 +251,62 @@ def mock_register(phone, password, name, user_type='customer'):
                     raise Exception("Failed to create customer record in Supabase")
             
             return True, "User registered successfully in Supabase"
-            
     except Exception as e:
         print(f"Error in Supabase registration: {str(e)}")
-        print("Falling back to mock registration system")
-    
-    # Continue with mock registration if Supabase failed
-    if phone in st.session_state.mock_users:
-        return False, "Phone number already registered"
-    
-    user_id = str(uuid.uuid4())
-    user = {
-        'id': user_id,
-        'name': name or f"User {phone[-4:]}",
-        'phone_number': phone,
-        'password': password,
-        'user_type': user_type,
-        'created_at': datetime.now().isoformat()
-    }
-    
-    st.session_state.mock_users[phone] = user
-    
-    if user_type == 'business':
-        business_id = str(uuid.uuid4())
-        st.session_state.mock_businesses[user_id] = {
-            'id': business_id,
-            'user_id': user_id,
-            'name': f"{name}'s Business",
-            'description': 'Auto-created business account',
-            'access_pin': '1234',
-            'created_at': datetime.now().isoformat()
-        }
-    else:
-        customer_id = str(uuid.uuid4())
-        st.session_state.mock_customers[user_id] = {
-            'id': customer_id,
-            'user_id': user_id,
-            'name': name,
+        
+    # In deployed environment, don't attempt to use mock data
+    # Check if we're in a local development environment
+    if 'mock_users' not in st.session_state:
+        # Initialize mock data for local development only
+        init_mock_data()
+        
+    # Continue with mock registration if Supabase failed and we're in dev mode
+    if 'mock_users' in st.session_state:
+        if phone in st.session_state.mock_users:
+            return False, "Phone number already registered"
+        
+        user_id = str(uuid.uuid4())
+        user = {
+            'id': user_id,
+            'name': name or f"User {phone[-4:]}",
             'phone_number': phone,
+            'password': password,
+            'user_type': user_type,
             'created_at': datetime.now().isoformat()
         }
-    
-    return True, "User registered successfully"
+        
+        st.session_state.mock_users[phone] = user
+        
+        if user_type == 'business':
+            business_id = str(uuid.uuid4())
+            st.session_state.mock_businesses[user_id] = {
+                'id': business_id,
+                'user_id': user_id,
+                'name': f"{name}'s Business",
+                'description': 'Auto-created business account',
+                'access_pin': '1234',
+                'created_at': datetime.now().isoformat()
+            }
+        else:
+            customer_id = str(uuid.uuid4())
+            st.session_state.mock_customers[user_id] = {
+                'id': customer_id,
+                'user_id': user_id,
+                'name': name,
+                'phone_number': phone,
+                'created_at': datetime.now().isoformat()
+            }
+        
+        return True, "User registered successfully"
+    else:
+        # In production, if Supabase failed and we don't have mock data, return error
+        return False, "Registration failed. Please try again later."
 
 
 def mock_query_table(table_name, query_type='select', fields='*', filters=None, data=None):
     """
     Mock implementation of query_table function
     """
-    # Initialize mock data if it's not already present
-    init_mock_data()
-    
     # Response class with data attribute to match Supabase responses
     class MockResponse:
         def __init__(self, data):

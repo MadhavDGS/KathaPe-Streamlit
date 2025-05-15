@@ -7,6 +7,7 @@ import base64
 from datetime import datetime
 import auth_service
 import data_service
+import supabase_service
 
 # App configuration
 st.set_page_config(
@@ -563,12 +564,16 @@ def login_page():
                 elif len(r_password) < 6:
                     st.error("Password should be at least 6 characters long")
                 else:
-                    success, message = auth_service.mock_register(r_phone, r_password, r_name, r_user_type)
-                    if success:
-                        st.success(message)
-                        st.info("Please login with your new account")
-                    else:
-                        st.error(message)
+                    try:
+                        success, message = auth_service.mock_register(r_phone, r_password, r_name, r_user_type)
+                        if success:
+                            st.success(message)
+                            st.info("Please login with your new account")
+                        else:
+                            st.error(message)
+                    except Exception as e:
+                        st.error(f"Registration failed: {str(e)}")
+                        st.info("Please try again later or contact support")
     
     # Demo credentials info in a more elegant expandable section
     with st.expander("Demo Credentials", expanded=False):
@@ -682,24 +687,41 @@ def business_customers():
                 
                 if not customer_exists:
                     # Register new customer and create credit relationship
-                    success, message = auth_service.mock_register(
-                        customer_phone, 
-                        "password123",  # Default password for simplicity
-                        customer_name, 
-                        "customer"
-                    )
-                    
-                    if success:
-                        # Find the newly created customer in mock users
-                        for phone, user in st.session_state.mock_users.items():
-                            if phone == customer_phone:
-                                # Ensure this customer has a credit relationship with this business
-                                data_service.ensure_customer_credit_exists(business_id, user['id'])
-                                st.success(f"Added customer {customer_name}")
-                                st.rerun()
-                                break
-                    else:
-                        st.error(message)
+                    try:
+                        success, message = auth_service.mock_register(
+                            customer_phone, 
+                            "password123",  # Default password for simplicity
+                            customer_name, 
+                            "customer"
+                        )
+                        
+                        if success:
+                            # Find the newly created customer in mock users
+                            # For Supabase, we need to query the database instead
+                            supabase = supabase_service.get_supabase_admin_client()
+                            if supabase:
+                                # Get the new customer data
+                                user_response = supabase.table('users').select('*').eq('phone_number', customer_phone).execute()
+                                if user_response.data:
+                                    user = user_response.data[0]
+                                    # Ensure this customer has a credit relationship with this business
+                                    data_service.ensure_customer_credit_exists(business_id, user['id'])
+                                    st.success(f"Added customer {customer_name}")
+                                    st.rerun()
+                            else:
+                                # Fall back to mock data if Supabase is not available
+                                for phone, user in st.session_state.get('mock_users', {}).items():
+                                    if phone == customer_phone:
+                                        # Ensure this customer has a credit relationship with this business
+                                        data_service.ensure_customer_credit_exists(business_id, user['id'])
+                                        st.success(f"Added customer {customer_name}")
+                                        st.rerun()
+                                        break
+                        else:
+                            st.error(message)
+                    except Exception as e:
+                        st.error(f"Failed to add customer: {str(e)}")
+                        st.info("Please try again later")
     
     # Display customers
     if customers:
@@ -1277,9 +1299,6 @@ def customer_profile():
 
 # App router
 def main():
-    # Initialize mock data for auth service
-    auth_service.init_mock_data()
-    
     # On first run or after login, set default page based on user type
     if "initialized" not in st.session_state:
         st.session_state.initialized = True
